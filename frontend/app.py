@@ -18,11 +18,35 @@ SUPPORTED_FORMATS = ["png", "jpg", "gif", "webp"]
 def load_templates():
     """Load all available meme templates"""
     try:
+        # First try /templates endpoint
         response = requests.get(f"{BASE_URL}/templates")
         if response.status_code == 200:
-            return response.json()
+            templates = response.json()
+            if templates:
+                return templates
+        
+        # If /templates fails or returns empty, try /images endpoint
+        response = requests.get(f"{BASE_URL}/images")
+        if response.status_code == 200:
+            examples = response.json()
+            # Create template list from examples
+            templates_set = set()
+            templates = []
+            for example in examples:
+                template_id = example['template']['id']
+                if template_id not in templates_set:
+                    templates_set.add(template_id)
+                    templates.append({
+                        'id': template_id,
+                        'name': template_id.replace('-', ' ').title(),
+                        'lines': 2
+                    })
+            return templates
+        
+        st.error(f"Failed to load templates. Status code: {response.status_code}")
         return []
-    except:
+    except Exception as e:
+        st.error(f"Error loading templates: {str(e)}")
         return []
 
 def generate_meme(template_id, text_lines, output_format="png", width=None, height=None):
@@ -52,19 +76,39 @@ def main():
     st.title("🎯 Meme Generator")
     st.markdown("Create custom memes with various templates and styles!")
 
-    # Load templates
-    templates = load_templates()
+    # Load templates with error handling
+    with st.spinner("Loading templates..."):
+        templates = load_templates()
+        if not templates:
+            st.error("⚠️ Could not load templates. Please make sure the backend server is running at " + BASE_URL)
+            st.info("To start the backend server, run: poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 5000")
+            return
     
     # Sidebar
     st.sidebar.header("Meme Configuration")
     
-    # Template selection
-    template_dict = {template['name']: template['id'] for template in templates}
-    selected_template = st.sidebar.selectbox(
-        "Choose a template",
-        options=list(template_dict.keys()),
-        index=0 if template_dict else None
-    )
+    # Template selection with search
+    if templates:
+        # Create template dictionary
+        template_dict = {template.get('name', template.get('id', '')).title(): template['id'] 
+                        for template in templates}
+        
+        # Add search box for templates
+        search_term = st.sidebar.text_input("🔍 Search Templates", "").lower()
+        
+        # Filter templates based on search
+        filtered_templates = {name: tid for name, tid in template_dict.items() 
+                            if search_term in name.lower() or search_term in tid.lower()}
+        
+        if not filtered_templates:
+            st.sidebar.warning("No templates match your search.")
+            selected_template = None
+        else:
+            selected_template = st.sidebar.selectbox(
+                "Choose a template",
+                options=list(filtered_templates.keys()),
+                index=0
+            )
 
     # Text input
     st.sidebar.subheader("Text Lines")
