@@ -1,7 +1,7 @@
-name: Sweet Brown
-source: https://knowyourmeme.com/memes/sweet-brown-aint-nobody-got-time-for-that
+name: ''
+source:
 keywords:
-  - Ain't Nobody Got Time For That
+  -
 text:
   - style: upper
     color: white
@@ -26,8 +26,8 @@ text:
     start: 0.0
     stop: 1.0
 example:
-  - memes?
-  - ain't nobody got time fo' that
+  - Top Line
+  - Bottom Line
 overlay:
   - center_x: 0.5
     center_y: 0.5

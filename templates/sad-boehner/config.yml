@@ -1,5 +1,5 @@
-name: Sad John Boehner
-source: https://en.wikipedia.org/wiki/John_Boehner
+name: ''
+source:
 keywords:
   -
 text:
@@ -26,8 +26,8 @@ text:
     start: 0.0
     stop: 1.0
 example:
-  - sad john boehner
-  - doesn't think you'll vote
+  - Top Line
+  - Bottom Line
 overlay:
   - center_x: 0.5
     center_y: 0.5
