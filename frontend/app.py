@@ -3,6 +3,7 @@ import requests
 from PIL import Image
 from io import BytesIO
 import json
+import time
 
 # Set page config
 st.set_page_config(
@@ -12,21 +13,38 @@ st.set_page_config(
 )
 
 # Constants
-BASE_URL = "http://localhost:5000"
+# Use the public API endpoint instead of localhost
+BASE_URL = "https://api.memegen.link"
 SUPPORTED_FORMATS = ["png", "jpg", "gif", "webp"]
 
+# Initialize session state for caching
+if 'templates_cache' not in st.session_state:
+    st.session_state.templates_cache = None
+if 'last_cache_time' not in st.session_state:
+    st.session_state.last_cache_time = None
+
 def load_templates():
-    """Load all available meme templates"""
+    """Load all available meme templates with caching"""
     try:
+        # Check if we have cached templates and they're less than 1 hour old
+        current_time = time.time()
+        if (st.session_state.templates_cache is not None and 
+            st.session_state.last_cache_time is not None and 
+            current_time - st.session_state.last_cache_time < 3600):
+            return st.session_state.templates_cache
+
         # First try /templates endpoint
-        response = requests.get(f"{BASE_URL}/templates")
+        response = requests.get(f"{BASE_URL}/templates", timeout=10)
         if response.status_code == 200:
             templates = response.json()
             if templates:
+                # Cache the templates
+                st.session_state.templates_cache = templates
+                st.session_state.last_cache_time = current_time
                 return templates
         
         # If /templates fails or returns empty, try /images endpoint
-        response = requests.get(f"{BASE_URL}/images")
+        response = requests.get(f"{BASE_URL}/images", timeout=10)
         if response.status_code == 200:
             examples = response.json()
             # Create template list from examples
@@ -41,12 +59,21 @@ def load_templates():
                         'name': template_id.replace('-', ' ').title(),
                         'lines': 2
                     })
+            # Cache the templates
+            st.session_state.templates_cache = templates
+            st.session_state.last_cache_time = current_time
             return templates
         
         st.error(f"Failed to load templates. Status code: {response.status_code}")
         return []
+    except requests.exceptions.ConnectionError:
+        st.error("⚠️ Could not connect to the meme API. Please check your internet connection.")
+        return []
+    except requests.exceptions.Timeout:
+        st.error("⚠️ Connection timed out. Please try again.")
+        return []
     except Exception as e:
-        st.error(f"Error loading templates: {str(e)}")
+        st.error(f"⚠️ Error loading templates: {str(e)}")
         return []
 
 def generate_meme(template_id, text_lines, output_format="png", width=None, height=None):
@@ -65,11 +92,23 @@ def generate_meme(template_id, text_lines, output_format="png", width=None, heig
         params['height'] = height
     
     try:
-        response = requests.get(url, params=params)
-        if response.status_code == 200:
-            return BytesIO(response.content)
+        with st.spinner("Generating meme..."):
+            response = requests.get(url, params=params, timeout=15)
+            if response.status_code == 200:
+                return BytesIO(response.content)
+            elif response.status_code == 404:
+                st.error("Template not found. Please try another template.")
+            else:
+                st.error(f"Failed to generate meme. Status code: {response.status_code}")
+            return None
+    except requests.exceptions.ConnectionError:
+        st.error("⚠️ Could not connect to the meme API. Please check your internet connection.")
         return None
-    except:
+    except requests.exceptions.Timeout:
+        st.error("⚠️ Request timed out. Please try again.")
+        return None
+    except Exception as e:
+        st.error(f"⚠️ Error generating meme: {str(e)}")
         return None
 
 def main():
