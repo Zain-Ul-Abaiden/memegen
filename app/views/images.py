@@ -122,41 +122,70 @@ async def create_automatic(request: Request):
             if not templates:
                 return response.json({"message": f"No results matched: {query}"}, status=404)
             fallback_template_id = templates[0]["id"]
+        # Pre-clean the query: remove boilerplate directives and template hints
+        working_query = query.translate(str.maketrans({
+            "“": '"', "”": '"', "‘": "'", "’": "'", "«": '"', "»": '"',
+        }))
+        # Remove directive phrases like "create a meme", "make a meme", and template hints
+        cleanup_patterns = [
+            r"^\s*(create|make|generate|build)\s+(a|an)?\s*meme\b[:,-]*\s*",
+            r"\b(meme\s+about)\b\s*",
+            r"\b(use|using)\s+[^\s]+\s+template\b",
+            r"\btemplate\b",
+            r"\bplease\b",
+        ]
+        for pat in cleanup_patterns:
+            working_query = re.sub(pat, "", working_query, flags=re.IGNORECASE)
+        working_query = re.sub(r"\s+", " ", working_query).strip(" -:;., ")
+
         # Split the query into up to two lines with simple heuristics:
         # 1) If a quoted phrase exists (straight or curly quotes), use it as line 2; the rest as line 1
         # 2) Else, split on common separators (:, -, —, ;)
         # 3) Else, balanced split by word count
         text_lines: list[str]
-        # Normalize curly quotes to straight quotes, then extract quoted phrase
-        normalized_query = query.translate(str.maketrans({
-            "“": '"',
-            "”": '"',
-            "‘": "'",
-            "’": "'",
-            "«": '"',
-            "»": '"',
-        }))
-        match = re.search(r'"([^"]+)"|\'([^\']+)\'', normalized_query)
+        # Look for quoted phrase in the cleaned query
+        match = re.search(r'"([^"]+)"|\'([^\']+)\'', working_query)
         if match:
             quoted = (match.group(1) or match.group(2) or "").strip()
-            prefix = (normalized_query[: match.start()] + normalized_query[match.end() :]).strip()
+            prefix = (working_query[: match.start()] + working_query[match.end() :]).strip()
             prefix = re.sub(r"\s+", " ", prefix).strip(" -:;.,")
             if prefix:
                 text_lines = [prefix, quoted]
             else:
                 text_lines = [quoted]
         else:
-            parts = re.split(r"\s*[:;\-—]\s*", query, maxsplit=1)
-            if len(parts) == 2:
-                left, right = parts
-                text_lines = [left.strip(), right.strip()] if right.strip() else [left.strip()]
+            # Try splitting at a question, else common separators
+            qpos = working_query.find("?")
+            if qpos != -1:
+                left = working_query[:qpos].strip()
+                right = working_query[qpos:].strip()
+                # If the left contains a leading action plus a second clause like "another ...",
+                # prefer the first clause to keep top text punchy.
+                lower_left = left.lower()
+                if " another " in lower_left:
+                    left = left[: lower_left.index(" another ")].strip(" -:;.,") or left
+                text_lines = [left, right] if left and right else [working_query]
             else:
-                words = query.split()
-                if len(words) > 8:
-                    mid = len(words) // 2
-                    text_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
+                parts = re.split(r"\s*[:;\-—]\s*", working_query, maxsplit=1)
+                if len(parts) == 2:
+                    left, right = parts
+                    text_lines = [left.strip(), right.strip()] if right.strip() else [left.strip()]
                 else:
-                    text_lines = [query]
+                    # As a last resort, split around the word "another" if present
+                    split_alt = re.split(r"\banother\b", working_query, maxsplit=1, flags=re.IGNORECASE)
+                    if len(split_alt) == 2:
+                        left, right = split_alt
+                        text_lines = [left.strip(), right.strip()]
+                    else:
+                        words = working_query.split()
+                        if len(words) > 12:
+                            mid = len(words) // 2
+                            text_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
+                        else:
+                            text_lines = [working_query]
+        # Trim overly long lines to keep them readable
+        max_chars = 80
+        text_lines = [line[:max_chars].rstrip() for line in text_lines if line]
         url = request.app.url_for(
             "Images.detail_text",
             template_id=fallback_template_id,

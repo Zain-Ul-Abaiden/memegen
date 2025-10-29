@@ -55,7 +55,7 @@ class MemeTemplateRequest:
 class AutomaticRequest:
     """Schema for AI-powered automatic meme generation request."""
     text: str  # Natural language description of the meme you want to create
-    safe: bool = True  # Whether to exclude NSFW results
+    safe: bool = False  # Whether to exclude NSFW results
     redirect: bool = False  # If true, redirects to image instead of returning JSON
 
 
