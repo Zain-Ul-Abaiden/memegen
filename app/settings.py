@@ -7,20 +7,12 @@ PLACEHOLDER = "string"  # Swagger UI placeholder value
 
 # Server configuration
 
-DEBUG = os.environ.get("DEBUG", "false") == "true"
+DEBUG = False
 
-if "DOMAIN" in os.environ:  # staging / production
-    SERVER_NAME = os.environ["DOMAIN"]
-    RELEASE_STAGE = "staging" if "staging" in SERVER_NAME else "production"
-    SCHEME = "https"
-elif "HEROKU_APP_NAME" in os.environ:  # review apps
-    SERVER_NAME = os.environ["HEROKU_APP_NAME"] + ".herokuapp.com"
-    RELEASE_STAGE = "review"
-    SCHEME = "https"
-else:  # localhost
-    SERVER_NAME = "localhost:5000"
-    RELEASE_STAGE = "local"
-    SCHEME = "http"
+# Force local mode
+SERVER_NAME = "localhost:5000"
+RELEASE_STAGE = "local"
+SCHEME = "http"
 
 BASE_URL = f"{SCHEME}://{SERVER_NAME}"
 DEPLOYED = RELEASE_STAGE != "local" and not DEBUG
@@ -54,11 +46,11 @@ MINIMUM_FRAMES = 5
 # Watermarks
 
 DISABLED_WATERMARK = "none"
-DEFAULT_WATERMARK = "Memegen.link"
-ALLOWED_WATERMARKS = [DEFAULT_WATERMARK]
+DEFAULT_WATERMARK = ""
+ALLOWED_WATERMARKS = []
 
-WATERMARK_HEIGHT = 20
-WATERMARK_ALPHA = 0.65
+WATERMARK_HEIGHT = 0
+WATERMARK_ALPHA = 0
 
 PREVIEW_TEXT = "PREVIEW"
 
@@ -133,10 +125,10 @@ TEST_IMAGES = [
 
 # Analytics
 
-TRACK_REQUESTS = True
-REMOTE_TRACKING_URL = os.getenv("REMOTE_TRACKING_URL")
+TRACK_REQUESTS = False
+REMOTE_TRACKING_URL = None
 
 REMOTE_TRACKING_ERRORS = 0
-REMOTE_TRACKING_ERRORS_LIMIT = int(os.getenv("REMOTE_TRACKING_ERRORS_LIMIT", "10"))
+REMOTE_TRACKING_ERRORS_LIMIT = 0
 
-BUGSNAG_API_KEY = os.getenv("BUGSNAG_API_KEY")
+BUGSNAG_API_KEY = None

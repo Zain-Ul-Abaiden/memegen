@@ -1,2 +1,1 @@
-api: DEBUG="${DEBUG:-true}" PYTHONUNBUFFERED=1 PYTHONASYNCIODEBUG=1 python app/main.py
-site: mkdocs serve --dev-addr localhost:5001
+api: DEBUG="${DEBUG:-true}" PYTHONUNBUFFERED=1 python app/main.py

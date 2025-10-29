@@ -38,6 +38,7 @@ webp = "~0.4"
 bugsnag = "^4.8"
 gunicorn = "^23.0"
 uvicorn = "~0.37.0"
+python-dotenv = "^1.2.1"
 
 [tool.poetry.group.dev.dependencies]
 

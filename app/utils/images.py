@@ -409,22 +409,8 @@ def render_animation(
                 box = box.rotate(angle, resample=Image.Resampling.BICUBIC, expand=True)
             image.paste(box, point, box)
 
-        if settings.DEBUG:
-            draw = ImageDraw.Draw(image)
-            for overlay in template.overlay:
-                xy = overlay.get_box(image.size)
-                draw.rectangle(xy, outline="fuchsia")
-
         if pad:
             image = add_blurred_background(image, background, *size)
-
-        if watermark:
-            image = add_watermark(image, watermark, is_preview, index, total)
-        elif 1 < total <= 5:
-            image = add_watermark(image, ".", is_preview, index, total)
-
-        if settings.DEBUG:
-            image = add_counter(image, index, total, modulus, duration)
 
         frames.append(image)
 
