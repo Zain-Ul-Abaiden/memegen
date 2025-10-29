@@ -1,4 +1,5 @@
 import asyncio
+import re
 
 from sanic import Blueprint, exceptions, response
 from sanic.log import logger
@@ -6,6 +7,7 @@ from sanic.request import Request
 from sanic_ext import openapi
 
 from .. import helpers, settings, utils
+from ..models import Template
 from .helpers import render_image
 from .schemas import (
     AutomaticRequest,
@@ -109,7 +111,61 @@ async def create_automatic(request: Request):
     results = await utils.meta.search(request, query, payload.get("safe", True))
     logger.info(f"Found {len(results)} result(s)")
     if not results:
-        return response.json({"message": f"No results matched: {query}"}, status=404)
+        # Last-resort fallback: pick a default template and build a meme from the query
+        try:
+            # Prefer a widely available template id
+            fallback_template_id = "ants"
+            _template = Template.objects.get_or_create(fallback_template_id)
+        except Exception:
+            # If the above fails, choose the first valid template
+            templates = await asyncio.to_thread(helpers.get_valid_templates, request, "", None)
+            if not templates:
+                return response.json({"message": f"No results matched: {query}"}, status=404)
+            fallback_template_id = templates[0]["id"]
+        # Split the query into up to two lines with simple heuristics:
+        # 1) If a quoted phrase exists (straight or curly quotes), use it as line 2; the rest as line 1
+        # 2) Else, split on common separators (:, -, —, ;)
+        # 3) Else, balanced split by word count
+        text_lines: list[str]
+        # Normalize curly quotes to straight quotes, then extract quoted phrase
+        normalized_query = query.translate(str.maketrans({
+            "“": '"',
+            "”": '"',
+            "‘": "'",
+            "’": "'",
+            "«": '"',
+            "»": '"',
+        }))
+        match = re.search(r'"([^"]+)"|\'([^\']+)\'', normalized_query)
+        if match:
+            quoted = (match.group(1) or match.group(2) or "").strip()
+            prefix = (normalized_query[: match.start()] + normalized_query[match.end() :]).strip()
+            prefix = re.sub(r"\s+", " ", prefix).strip(" -:;.,")
+            if prefix:
+                text_lines = [prefix, quoted]
+            else:
+                text_lines = [quoted]
+        else:
+            parts = re.split(r"\s*[:;\-—]\s*", query, maxsplit=1)
+            if len(parts) == 2:
+                left, right = parts
+                text_lines = [left.strip(), right.strip()] if right.strip() else [left.strip()]
+            else:
+                words = query.split()
+                if len(words) > 8:
+                    mid = len(words) // 2
+                    text_lines = [" ".join(words[:mid]), " ".join(words[mid:])]
+                else:
+                    text_lines = [query]
+        url = request.app.url_for(
+            "Images.detail_text",
+            template_id=fallback_template_id,
+            text_filepath=utils.text.encode(text_lines) + ".png",
+            _external=True,
+            _scheme=settings.SCHEME,
+        )
+        url, _updated = await utils.meta.tokenize(request, url)
+        return response.json({"url": utils.urls.clean(url), "generator": "fallback", "confidence": 0.5}, status=201)
 
     url = utils.urls.normalize(results[0]["image_url"])
     generator = results[0]["generator"]

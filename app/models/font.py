@@ -11,7 +11,30 @@ from .. import settings
 class Manager:
     @staticmethod
     def get(name: str) -> Font:
-        name = name or settings.DEFAULT_FONT
+        name = (name or settings.DEFAULT_FONT).strip()
+        # Normalize case and map common display names to internal IDs/aliases
+        normalized = name.lower()
+        common_name_map = {
+            "impact": "impact",
+            "segoe ui bold": "segoe",
+            "noto sans bold": "notosans",
+            "notosans-bold": "notosans",
+            "kalam-regular": "kalam",
+            "titilliumweb-black": "titilliumweb",
+            "titilliumweb semibold": "titilliumweb-thin",
+            "titilliumweb-semibold": "titilliumweb-thin",
+            "hg-mincho-b": "hgminchob",
+            "hg mincho b": "hgminchob",
+            # Unknown suggestions from models map to a reasonable default
+            "microflf-bold": "impact",
+            "tahoma-bold": "impact",
+        }
+        mapped = common_name_map.get(normalized, normalized)
+
+        for font in FONTS:
+            if mapped in (font.id.lower(), (font.alias or "").lower()):
+                return font
+        # Try exact match as a last resort
         for font in FONTS:
             if name in (font.id, font.alias):
                 return font

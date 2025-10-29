@@ -31,6 +31,7 @@ def _encode(line):
         ("?", "~q"),
         ("%", "~p"),
         ("#", "~h"),
+        (":", "~c"),
         ('"', "''"),
         ("/", "~s"),
         ("\\", "~b"),
@@ -48,6 +49,11 @@ def _encode(line):
 
     if has_trailing_under:
         encoded = encoded.replace("___", "__-")
+
+    # On Windows, path segments cannot end with a dot. Replace any trailing dots.
+    # Preserve length by converting trailing '.' characters to underscores.
+    while encoded.endswith("."):
+        encoded = encoded[:-1] + "_"
 
     return encoded
 
@@ -82,6 +88,7 @@ def decode(slug: str) -> list[str]:
         ("~l", "<"),
         ("~g", ">"),
         ("~b", "\\"),
+        ("~c", ":"),
     ]:
         slug = slug.replace(before, after)
 
