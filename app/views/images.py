@@ -16,6 +16,7 @@ from .schemas import (
     MemeResponse,
 )
 from .templates import generate_url
+from ..ai import gemini
 
 blueprint = Blueprint("Images", url_prefix="/images")
 
@@ -57,14 +58,23 @@ async def create(request: Request):
 
 
 @blueprint.post("/automatic")
-@openapi.exclude(not settings.REMOTE_TRACKING_URL)
-@openapi.summary("Create a meme from word or phrase")
+@openapi.summary("Create a meme using AI interpretation of natural language")
+@openapi.description(
+    "Send a natural language description of the meme you want to create. "
+    "The AI will interpret your request and choose an appropriate template, text, and style. "
+    "Example: 'Create a Fry meme about being confused if code is working or not'"
+)
 @openapi.body({"application/json": AutomaticRequest})
 @openapi.response(
-    201, {"application/json": MemeResponse}, "Successfully created a meme"
+    201,
+    {"application/json": MemeResponse},
+    "Successfully created a meme. Response includes the meme URL and AI confidence score"
 )
 @openapi.response(
     400, {"application/json": ErrorResponse}, 'Required "text" missing in request body'
+)
+@openapi.response(
+    404, {"application/json": ErrorResponse}, "No matching templates found for the request"
 )
 async def create_automatic(request: Request):
     if request.form:
@@ -79,6 +89,22 @@ async def create_automatic(request: Request):
         query = payload["text"]
     except KeyError:
         return response.json({"error": '"text" is required'}, status=400)
+    # First try to interpret the natural-language query with Gemini (if configured).
+    try:
+        logger.info(f"Attempting Gemini interpretation for query: {query}")
+        ai_result = await gemini.interpret_and_build_url(request, query)
+        logger.info(f"Gemini result: {ai_result}")
+    except Exception as e:
+        logger.error(f"Gemini interpretation failed: {str(e)}")
+        ai_result = None
+
+    if ai_result:
+        # Gemini returned a ready URL (or confidence). Return it directly.
+        logger.info(f"Using Gemini-generated meme URL: {ai_result}")
+        return response.json(
+            {"url": ai_result["url"], "generator": ai_result.get("generator", "gemini"), "confidence": ai_result.get("confidence", 0.75)},
+            status=201,
+        )
 
     results = await utils.meta.search(request, query, payload.get("safe", True))
     logger.info(f"Found {len(results)} result(s)")

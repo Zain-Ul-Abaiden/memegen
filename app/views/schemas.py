@@ -53,9 +53,10 @@ class MemeTemplateRequest:
 
 @dataclass
 class AutomaticRequest:
-    text: str
-    safe: bool
-    redirect: bool
+    """Schema for AI-powered automatic meme generation request."""
+    text: str  # Natural language description of the meme you want to create
+    safe: bool = True  # Whether to exclude NSFW results
+    redirect: bool = False  # If true, redirects to image instead of returning JSON
 
 
 @dataclass
