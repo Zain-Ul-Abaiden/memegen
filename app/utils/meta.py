@@ -20,90 +20,20 @@ def version() -> str:
     key_builder=lambda _func, request: f"{request.args=} {request.headers=}",
 )
 async def authenticate(request: Request) -> dict:
-    info: dict = {}
-    if settings.REMOTE_TRACKING_URL:
-        api = settings.REMOTE_TRACKING_URL + "auth"
-    else:
-        return info
-
-    api_key = _get_api_key(request)
-    if api_key:
-        api_mask = api_key[:2] + "***" + api_key[-2:]
-        logger.info(f"Authenticating with API key: {api_mask}")
-        async with aiohttp.ClientSession() as session:
-            response = await session.get(api, headers={"X-API-KEY": api_key})
-            if response.status >= 500:
-                settings.REMOTE_TRACKING_ERRORS += 1
-            else:
-                info = await response.json()
-
-    return info
+    return {"image_access": True}  # Always grant access
 
 
 @cached(60 * 15 if settings.DEPLOYED else 5)
 async def tokenize(request: Request, url: str) -> tuple[str, bool]:
-    api_key = _get_api_key(request) or ""
-    token = request.args.get("token")
-    default_url = url.replace(f"api_key={api_key}", "").replace("?&", "?").strip("?&")
-
-    if api_key == "myapikey42" and not url.startswith(
-        "https://api.memegen.link/images/puffin/custom_watermark/sample_image.png"
-    ):
-        logger.warning(f"Example API key used to tokenize: {url}")
-        return default_url, True
-
-    if settings.REMOTE_TRACKING_URL:
-        api = settings.REMOTE_TRACKING_URL + "tokenize"
-    else:
-        return url, False
-
-    if api_key or token:
-        async with aiohttp.ClientSession() as session:
-            response = await session.post(
-                api, data={"url": default_url}, headers={"X-API-KEY": api_key}
-            )
-            if response.status >= 500:
-                settings.REMOTE_TRACKING_ERRORS += 1
-                return default_url, False
-
-            data = await response.json()
-            return data["url"], data["url"] != url
-
-    return url, False
+    return url, False  # No tokenization needed
 
 
 async def custom_watermarks_allowed(request: Request) -> bool:
-    info = await authenticate(request)
-    if info.get("image_access", False):
-        return True
-
-    token = request.args.get("token")
-    if token:
-        logger.info(f"Authenticating with token: {token}")
-        _url, updated = await tokenize(request, request.url)
-        return not updated
-
-    return False
+    return True  # Always allow custom watermarks
 
 
 async def get_watermark(request: Request) -> tuple[str, bool]:
-    watermark = request.args.get("watermark", "")
-
-    if await custom_watermarks_allowed(request):
-        if watermark == settings.DISABLED_WATERMARK:
-            return "", False
-        return watermark, False
-
-    if watermark:
-        if watermark == settings.DEFAULT_WATERMARK:
-            logger.warning(f"Redundant watermark: {watermark}")
-            return settings.DEFAULT_WATERMARK, True
-        if watermark in settings.ALLOWED_WATERMARKS:
-            return watermark, False
-        logger.warning(f"Invalid watermark: {watermark}")
-        return settings.DEFAULT_WATERMARK, True
-
-    return settings.DEFAULT_WATERMARK, False
+    return "", False  # Always return no watermark
 
 
 async def track(request: Request, lines: list[str]):

@@ -64,10 +64,8 @@ def init(app: Sanic):
     app.config.MOTD = False
     app.ext._display = lambda: None  # type: ignore
 
-    app.ext.openapi.add_security_scheme("ApiKeyAuth", type="apiKey", name="X-API-KEY")
-    app.ext.openapi.secured("ApiKeyAuth")
     app.ext.openapi.describe(
-        "Memegen.link",
+        "Meme Generator API",
         version=utils.meta.version(),
         description=dedent(
             """
@@ -76,7 +74,7 @@ def init(app: Sanic):
         Fetch the list of templates:
 
         ```
-        $ http GET https://api.memegen.link/templates
+        $ http GET http://localhost:5000/templates
 
         [
             {
