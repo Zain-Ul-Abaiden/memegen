@@ -42,7 +42,7 @@ endif
 
 site: install
 	poetry run mkdocs build --strict
-	sed -i -e 's/http:\/\/localhost:5000/https:\/\/api.memegen.link/g' site/examples/index.html
+	sed -i -e 's/http:\/\/localhost:3000/https:\/\/api.memegen.link/g' site/examples/index.html
 	echo memegen.link > site/CNAME
 ifeq ($(CIRCLE_BRANCH),main)
 	@ echo

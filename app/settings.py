@@ -17,7 +17,7 @@ PLACEHOLDER = "string"  # Swagger UI placeholder value
 DEBUG = False
 
 # Force local mode
-SERVER_NAME = "localhost:5000"
+SERVER_NAME = "localhost:3000"
 RELEASE_STAGE = "local"
 SCHEME = "http"
 
@@ -145,3 +145,11 @@ BUGSNAG_API_KEY = None
 GEMINI_URL = os.environ.get("GEMINI_URL")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+
+# API authentication
+API_KEY = os.environ.get("API_KEY")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")
+
+# API authentication
+API_KEY = os.environ.get("API_KEY")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")

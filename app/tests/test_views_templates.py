@@ -31,21 +31,21 @@ def describe_detail():
                 "lines": 2,
                 "overlays": 1,
                 "styles": ["default"],
-                "blank": "http://localhost:5000/images/iw.png",
+                "blank": "http://localhost:3000/images/iw.png",
                 "example": {
                     "text": ["does testing", "in production"],
-                    "url": "http://localhost:5000/images/iw/does_testing/in_production.png",
+                    "url": "http://localhost:3000/images/iw/does_testing/in_production.png",
                 },
                 "source": "http://knowyourmeme.com/memes/insanity-wolf",
                 "keywords": [],
-                "_self": "http://localhost:5000/templates/iw",
+                "_self": "http://localhost:3000/templates/iw",
             }
 
         def it_defaults_to_animated_example_when_available(expect, client):
             request, response = client.get("/templates/bongo")
             expect(response.status) == 200
             expect(response.json["example"]["url"]) == (
-                "http://localhost:5000/images/bongo/"
+                "http://localhost:3000/images/bongo/"
                 "Any_sound_when_you're_trying_to_sleep/Max_volume_alarm_when_you_have_to_wake_up.gif"
             )
 
@@ -62,7 +62,7 @@ def describe_detail():
 
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.jpg"
+                "url": "http://localhost:3000/images/iw/foo/bar.jpg"
             }
 
         @pytest.mark.parametrize("as_json", [True, False])
@@ -76,7 +76,7 @@ def describe_detail():
             request, response = client.post("/templates/custom", **kwargs)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/custom/foo/bar.jpg"
+                "url": "http://localhost:3000/images/custom/foo/bar.jpg"
                 "?background=https://www.gstatic.com/webp/gallery/3.png"
             }
 
@@ -89,7 +89,7 @@ def describe_detail():
             request, response = client.post("/templates/custom", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/fry/foo/bar.jpg"
+                "url": "http://localhost:3000/images/fry/foo/bar.jpg"
             }
 
         @pytest.mark.parametrize("id", ["iw", "custom"])
@@ -98,7 +98,7 @@ def describe_detail():
             request, response = client.post(
                 f"/templates/{id}", data=data, allow_redirects=False
             )
-            redirect = f"http://localhost:5000/images/{id}/abc.png?status=201"
+            redirect = f"http://localhost:3000/images/{id}/abc.png?status=201"
             expect(response.status) == 302
             expect(response.headers["Location"]) == redirect
 
@@ -109,5 +109,5 @@ def describe_detail():
             )
             expect(response.status) == 404
             expect(response.json) == {
-                "url": "http://localhost:5000/images/unknown/one/two.png"
+                "url": "http://localhost:3000/images/unknown/one/two.png"
             }

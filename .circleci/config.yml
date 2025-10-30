@@ -85,7 +85,7 @@ jobs:
       - run:
           name: Running Docker image
           command: |
-            docker run --name memegen -p 5000:5000 --rm memegen || :
+            docker run --name memegen -p 3000:3000 --rm memegen || :
           background: true
 
       - run:
@@ -96,9 +96,9 @@ jobs:
             MAX_TRIES=15
             for i in $(seq 1 $MAX_TRIES); do
                 sleep 5
-                http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:5000/images/preview.jpg" 2>/dev/null)
+                http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3000/images/preview.jpg" 2>/dev/null)
                 if [ "$http_code" = "200" ]; then
-                    echo "Received successful response against http://localhost:5000/images/preview.jpg"
+                    echo "Received successful response against http://localhost:3000/images/preview.jpg"
                     echo "Confirmed API is running after $MAX_TRIES tries"
                     exit 0
                 fi

@@ -21,12 +21,12 @@
     "server": "python app/main.py"
   },
   "portsAttributes": {
-    "5000": {
+    "3000": {
       "label": "Meme Generator API",
       "onAutoForward": "openPreview"
     }
   },
   "forwardPorts": [
-    5000
+    3000
   ]
 }

@@ -4,6 +4,7 @@ from sanic import Blueprint, exceptions, response
 from sanic.request import Request
 from sanic_ext import openapi
 
+from app import settings
 from .. import helpers, utils
 from ..models import Template
 from .helpers import generate_url
@@ -11,6 +12,7 @@ from .schemas import CustomRequest, MemeResponse, MemeTemplateRequest, TemplateR
 
 blueprint = Blueprint("Templates", url_prefix="/templates")
 
+security = {settings.API_KEY_HEADER: []} if settings.API_KEY_HEADER else None
 
 @blueprint.get("/")
 @openapi.summary("List all templates")
@@ -36,7 +38,6 @@ async def index(request: Request):
     )
     return response.json(data)
 
-
 @blueprint.get("/<id:slug>")
 @openapi.summary("View a specific template")
 @openapi.parameter("id", str, "path", description="ID of a meme template")
@@ -52,7 +53,6 @@ async def detail(request, id):
         return response.json(template.jsonify(request))
     raise exceptions.NotFound(f"Template not found: {id}")
 
-
 @blueprint.post("/<id:slug>")
 @openapi.summary("Create a meme from a template")
 @openapi.parameter("id", str, "path", description="ID of a meme template")
@@ -64,7 +64,6 @@ async def detail(request, id):
 )
 async def build(request, id):
     return await generate_url(request, id)
-
 
 @blueprint.post("/custom")
 @openapi.summary("Create a meme from any image")

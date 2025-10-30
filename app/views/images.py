@@ -22,6 +22,7 @@ from ..ai import gemini
 
 blueprint = Blueprint("Images", url_prefix="/images")
 
+security = {settings.API_KEY_HEADER: []} if settings.API_KEY_HEADER else None
 
 @blueprint.get("/")
 @openapi.summary("List example memes")
@@ -40,7 +41,6 @@ async def index(request: Request):
         [{"url": url, "template": template} for url, template in examples]
     )
 
-
 @blueprint.post("/")
 @openapi.summary("Create a meme from a template")
 @openapi.body({"application/json": MemeRequest})
@@ -58,8 +58,8 @@ async def index(request: Request):
 async def create(request: Request):
     return await generate_url(request, template_id_required=True)
 
-
 @blueprint.post("/automatic")
+@openapi.secured(security)
 @openapi.summary("Create a meme using AI interpretation of natural language")
 @openapi.description(
     "Send a natural language description of the meme you want to create. "
@@ -349,5 +349,7 @@ async def detail_text(request: Request, template_id: str, text_filepath: str):
             **params,
         )
         return response.redirect(utils.urls.clean(url), status=302)
+
+    return await render_image(request, template_id, slug, watermark, extension)
 
     return await render_image(request, template_id, slug, watermark, extension)

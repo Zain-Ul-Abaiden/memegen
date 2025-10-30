@@ -9,7 +9,7 @@ from locust import HttpUser, constant_pacing, task
 
 
 class Client(HttpUser):
-    host = "http://localhost:5000"
+    host = "http://localhost:3000"
     wait_time = constant_pacing(10)
 
     @task(10)

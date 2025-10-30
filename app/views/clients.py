@@ -2,14 +2,16 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic_ext import openapi
 
-from .. import utils
+from .. import utils, settings
 from .helpers import preview_image
 from .schemas import AuthResponse, ErrorResponse
 
 blueprint = Blueprint("Clients", url_prefix="/")
 
+security = {settings.API_KEY_HEADER: []} if settings.API_KEY_HEADER else None
 
 @blueprint.post("/auth")
+@openapi.secured(security)
 @openapi.summary("Validate your API key (no-op for self-hosted)")
 @openapi.response(200, {"application/json": AuthResponse}, "Auth is always permitted (self-hosted)")
 async def auth(request):
@@ -35,4 +37,6 @@ async def preview(request: Request):
     style = request.args.get("style") or ",".join(request.args.getlist("styles[]", []))
     while style.endswith(",default"):
         style = style.removesuffix(",default")
+    return await preview_image(request, id, style, lines)
+
     return await preview_image(request, id, style, lines)
