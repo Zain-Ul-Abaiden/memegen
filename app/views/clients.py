@@ -10,15 +10,10 @@ blueprint = Blueprint("Clients", url_prefix="/")
 
 
 @blueprint.post("/auth")
-@openapi.summary("Validate your API key")
-@openapi.response(200, {"application/json": AuthResponse}, "Your API key is valid")
-@openapi.response(401, {"application/json": ErrorResponse}, "Your API key is invalid")
-async def validate(request: Request):
-    info = await utils.meta.authenticate(request)
-    return response.json(
-        info or {"error": "API key missing or invalid."},
-        status=200 if info else 401,
-    )
+@openapi.summary("Validate your API key (no-op for self-hosted)")
+@openapi.response(200, {"application/json": AuthResponse}, "Auth is always permitted (self-hosted)")
+async def auth(request):
+    return response.json({"success": True}, status=200)
 
 
 @blueprint.get("/images/preview.jpg")

@@ -75,17 +75,26 @@ async def _call_gemini(prompt: str) -> dict | None:
 
 
 def _build_prompt(query: str) -> str:
-    """Create a compact prompt describing available templates, fonts, and expected output.
-
-    Optimized for Gemini's JSON response format with clear instructions on output structure.
+    """Create a compact prompt describing available templates, fonts, filetypes, and expected output.
+    List only valid templates (those with default.png, default.jpg, or default.gif).
     """
     templates = []
+    extensions = set()
     try:
         for p in sorted(TEMPLATES_DIR.iterdir()):
             if p.is_dir():
-                templates.append(p.name)
+                for ext in ("png", "jpg", "jpeg", "gif"):  # Add others if supported
+                    if (p / f"default.{ext}").exists():
+                        templates.append(p.name)
+                        extensions.add(ext)
+                        break
     except Exception:
         templates = []
+        extensions = set()
+    if not templates:
+        templates = [p.name for p in sorted(TEMPLATES_DIR.iterdir()) if p.is_dir()]
+    if not extensions:
+        extensions = {"png", "jpg", "gif"}
 
     fonts = []
     try:
@@ -96,51 +105,39 @@ def _build_prompt(query: str) -> str:
     except Exception:
         fonts = []
 
-    # Build a compact but informative prompt for Gemini
-    prompt = f"""As a meme generator, analyze this request and generate appropriate meme parameters.
-Request: {query}
+    prompt = f"""
+You are an expert meme generator with access to these real templates: {', '.join(templates)}.
+Available fonts: {', '.join(fonts)}.
+File types: {', '.join(extensions)}.
 
 Instructions:
-1. Choose from these templates: {", ".join(templates[:20])}... (more available)
-2. Available fonts: {", ".join(fonts[:10])}... (more available)
-3. Output must be valid JSON with this structure:
+- If the user query directly names a template, font, or filetype/extension, you must use that if available.
+- Otherwise, pick the most contextually appropriate values.
+- Always use ONLY the above template names/fonts/extensions, never invent new ones.
+- If you cannot use the user's request exactly, select the closest valid option and always return a meme generation result.
+
+Return only valid JSON with this structure:
 {{
     "template_id": "template_name",
     "text": ["top text", "bottom text"],
     "font": "font_name",
+    "extension": "filetype",
     "style": "default"
 }}
+All fields above are required except font and style (style defaults to 'default' if missing).
+template_id, font, and extension must match items given in the lists above.
 
-Requirements:
-- template_id must be a valid template from the list
-- text should be 1-2 lines
-- font should be from available fonts or omitted
-- style is optional (default if omitted)
+Request: {query}
 
-Please provide ONLY the JSON response, no additional text."""
-
-    return prompt
-
-    prompt = (
-        f"You are a meme-generation assistant. Create a meme based on this request: \"{query}\"\n\n"
-        f"Return ONLY a JSON object with these keys:\n"
-        f"- template_id: Pick from [{', '.join(templates[:30])}]\n"
-        f"- text: Array of 1-2 text lines for the meme\n"
-        f"- font: One of [{', '.join(fonts[:10])}] (optional)\n"
-        f"- style: Usually 'default' (optional)\n\n"
-        f"Example response:\n"
-        f'{{"template_id": "fry", "text": ["Not sure if code works", "Or I just got lucky"], "font": "thick"}}\n\n'
-        f"Return ONLY the JSON, no other text."
-    )
+Only provide the JSON response, no extra text, markdown, or comments.
+"""
     return prompt
 
 
 async def interpret_and_build_url(request, query: str) -> dict | None:
     """Interpret a natural-language query via Gemini and build a memegen URL.
 
-    Returns the same structure as the existing automatic endpoint JSON response,
-    e.g. {"url": ..., "generator": "gemini", "confidence": 0.9}
-    or None on failure so callers can fallback to existing search.
+    Always generate a meme if at all possible, using the closest valid template if directly requested one isn't available.
     """
     prompt = _build_prompt(query)
     data = await _call_gemini(prompt)
@@ -154,22 +151,58 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
         text = [text]
     font = data.get("font") or ""
     style = data.get("style") or "default"
+    extension = data.get("extension") or ""
     image_url = data.get("image_url") or data.get("background")
+
+    allowed_templates = []
+    try:
+        from pathlib import Path
+        allowed_templates = [p.name for p in sorted((Path(settings.ROOT) / "templates").iterdir()) if p.is_dir() and any((p / f"default.{ext}").exists() for ext in ("png", "jpg", "jpeg", "gif"))]
+    except Exception:
+        allowed_templates = []
+
+    used_fallback = False
+    original_template = template_id
+    if template_id and (template_id not in allowed_templates):
+        # Fallback to closest valid by string similarity or just pick first valid one
+        import difflib
+        matches = difflib.get_close_matches(template_id, allowed_templates, n=1)
+        if matches:
+            template_id = matches[0]
+        elif allowed_templates:
+            template_id = allowed_templates[0]
+        used_fallback = True
 
     # Build a memegen URL using existing model utilities
     if image_url:
         # Treat as custom background
         template = models.Template.objects.get_or_create(image_url)
-        url = template.build_custom_url(request, text, background=image_url, style=style, font=font)
+        url = template.build_custom_url(request, text, background=image_url, style=style, font=font, extension=extension)
     elif template_id:
         template = models.Template.objects.get_or_create(template_id)
-        url = template.build_custom_url(request, text, style=style, font=font)
+        url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
         if not template.valid:
-            # fallback
-            return None
+            # Try fallback template, if not already tried
+            import difflib
+            valid_templates = [t for t in allowed_templates if t != template_id]
+            fallback = difflib.get_close_matches(template_id, valid_templates, n=1)
+            if fallback:
+                template_id = fallback[0]
+                template = models.Template.objects.get_or_create(template_id)
+                url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
+                used_fallback = True
+            elif valid_templates:
+                template_id = valid_templates[0]
+                template = models.Template.objects.get_or_create(template_id)
+                url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
+                used_fallback = True
+            else:
+                return None
     else:
         # Nothing usable returned
         return None
 
     url, _updated = await utils.meta.tokenize(request, url)
+    if used_fallback:
+        logger.warning(f"Gemini requested invalid template '{original_template}', using fallback '{template_id}' instead.")
     return {"url": url, "generator": "gemini", "confidence": float(data.get("confidence", 0.75))}

@@ -10,7 +10,7 @@ packages = [{ include = "app" }]
 
 [tool.poetry.dependencies]
 
-python = "^3.13"
+python = "^3.12"
 
 # Sanic
 sanic = "~25.3" # run 'poetry update sanic-ext sanic-testing' when changing this
@@ -39,6 +39,9 @@ bugsnag = "^4.8"
 gunicorn = "^23.0"
 uvicorn = "~0.37.0"
 python-dotenv = "^1.2.1"
+packaging = "^25.0"
+typing-extensions = "^4.15.0"
+google-generativeai = "^0.8.5"
 
 [tool.poetry.group.dev.dependencies]
 
@@ -75,6 +78,7 @@ honcho = "^2.0"
 ipdb = "*"
 rope = "^1.14"
 watchdog = { version = "^2.2", extras = ["watchmedo"] }
+packaging = "^25.0"
 
 [tool.black]
 

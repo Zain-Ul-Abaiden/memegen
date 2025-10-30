@@ -15,12 +15,8 @@ def version() -> str:
     return version_heading.split(" ", maxsplit=1)[1]
 
 
-@cached(
-    60 * 15 if settings.DEPLOYED else 5,
-    key_builder=lambda _func, request: f"{request.args=} {request.headers=}",
-)
-async def authenticate(request: Request) -> dict:
-    return {"image_access": True}  # Always grant access
+def authenticate(request):
+    return {"image_access": True}
 
 
 @cached(60 * 15 if settings.DEPLOYED else 5)

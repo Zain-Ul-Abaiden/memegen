@@ -111,4 +111,12 @@ def fingerprint(value: str, *, prefix="_custom-", suffix="") -> str:
 
 
 def slugify(value: str) -> str:
+    # Allow either pure slugs, or _custom-hash style
+    if value.startswith("_custom-"):
+        # Ensure that what's after _custom- is a hex string
+        suffix = value[len("_custom-"):]
+        if suffix and all(c in "0123456789abcdef" for c in suffix.lower()):
+            return value
+        # fallback: strip anything else
+        return re.sub(r"[^_a-z0-9-]", "", value).strip("-")
     return re.sub(r"[^a-z0-9-]", "", value).strip("-")

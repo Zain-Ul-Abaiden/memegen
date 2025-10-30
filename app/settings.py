@@ -52,10 +52,9 @@ MINIMUM_FRAMES = 5
 
 # Watermarks
 
-DISABLED_WATERMARK = "none"
-DEFAULT_WATERMARK = "none"
+DISABLED_WATERMARK = ''
+DEFAULT_WATERMARK = ''
 ALLOWED_WATERMARKS = []
-
 WATERMARK_HEIGHT = 0
 WATERMARK_ALPHA = 0
 
@@ -145,4 +144,4 @@ BUGSNAG_API_KEY = None
 # natural-language meme requests. GEMINI_MODEL can be e.g. "gemini-free".
 GEMINI_URL = os.environ.get("GEMINI_URL")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-free")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
