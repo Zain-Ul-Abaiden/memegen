@@ -9,7 +9,7 @@ from locust import HttpUser, constant_pacing, task
 
 
 class Client(HttpUser):
-    host = "http://localhost:3000"
+    host = "https://meme.bigosoft.us"
     wait_time = constant_pacing(10)
 
     @task(10)

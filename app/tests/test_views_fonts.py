@@ -13,5 +13,5 @@ def describe_detail():
                 "id": "titilliumweb",
                 "alias": "thick",
                 "filename": "TitilliumWeb-Black.ttf",
-                "_self": "http://localhost:3000/fonts/titilliumweb",
+                "_self": "https://meme.bigosoft.us/fonts/titilliumweb",
             }

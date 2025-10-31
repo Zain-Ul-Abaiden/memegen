@@ -74,7 +74,7 @@ def init(app: Sanic):
         Fetch the list of templates:
 
         ```
-        $ http GET http://localhost:3000/templates
+        $ http GET https://meme.bigosoft.us/templates
 
         [
             {

@@ -16,10 +16,11 @@ PLACEHOLDER = "string"  # Swagger UI placeholder value
 
 DEBUG = False
 
-# Force local mode
-SERVER_NAME = "localhost:3000"
-RELEASE_STAGE = "local"
-SCHEME = "http"
+# Server name, scheme, and release stage can be overridden via environment
+# variables in deployed environments. Defaults are suitable for local dev.
+SERVER_NAME = os.environ.get("SERVER_NAME", "localhost:3000")
+RELEASE_STAGE = os.environ.get("RELEASE_STAGE", "local")
+SCHEME = os.environ.get("SCHEME", "http")
 
 BASE_URL = f"{SCHEME}://{SERVER_NAME}"
 DEPLOYED = RELEASE_STAGE != "local" and not DEBUG

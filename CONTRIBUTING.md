@@ -34,20 +34,20 @@ $ make run
 
 ## Preview image rendering
 
-View all example images: http://localhost:3000/examples
+View all example images: https://meme.bigosoft.us/examples
 
-View test images with automatic reload: http://localhost:3000/test
+View test images with automatic reload: https://meme.bigosoft.us/test
 
 To view a specific image with automatic reload, simply drop the file extension.
 
 ## Add a new meme template
 
-1. Visit http://localhost:3000/<my_new_template_id>
+1. Visit https://meme.bigosoft.us/<my_new_template_id>
 2. Add a `default.png` (or JPG) background image in `templates/<my_new_template_id>` directory
 3. Update `config.yml` in the `templates/<my_new_template_id>` directory
-4. Refresh http://localhost:3000/images/<my_new_template_id> to see the example
+4. Refresh https://meme.bigosoft.us/images/<my_new_template_id> to see the example
 5. Adjust `config.yml` as necessary to position and style the text
-6. Visit http://localhost:3000/templates to validate all templates
+6. Visit https://meme.bigosoft.us/templates to validate all templates
 
 # Continuous Integration
 
