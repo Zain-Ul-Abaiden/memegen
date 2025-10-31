@@ -145,7 +145,7 @@ promote: install .envrc
 	@ echo
 	sleep 30
 	@ echo
-	SITE=https://api.memegen.link poetry run pytest scripts/check_deployment.py --verbose --no-cov
+	SITE=https://meme.bigosoft.us poetry run pytest scripts/check_deployment.py --verbose --no-cov
 
 .env:
 	echo WEB_CONCURRENCY=2 >> $@

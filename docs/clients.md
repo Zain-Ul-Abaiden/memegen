@@ -25,7 +25,7 @@ Please <a href="mailto:support@maketested.com?subject=memegen.link">contact supp
 Authenticated requests can be made using a header:
 
 ```shell
-$ curl "https://api.memegen.link/images/fry/http_header/example.png" \
+$ curl "https://meme.bigosoft.us/images/fry/http_header/example.png" \
   --header "X-API-KEY: myapikey42" --output http_header_example.png --location
 ```
 
@@ -34,7 +34,7 @@ $ curl "https://api.memegen.link/images/fry/http_header/example.png" \
 If that's not an option, the API key can also be added as a query parameter:
 
 ```shell
-$ curl "https://api.memegen.link/images/fry/query_parameter/example.png?api_key=myapikey42" \
+$ curl "https://meme.bigosoft.us/images/fry/query_parameter/example.png?api_key=myapikey42" \
   --output query_parameter_example.png --location
 ```
 
@@ -55,7 +55,7 @@ function updatePreview() {
   var line_1 = encodeURIComponent($("#line_1").val() || " ")
   var line_2 = encodeURIComponent($("#line_2").val() || " ")
 
-  var api = "https://api.memegen.link/images/preview.jpg"
+  var api = "https://meme.bigosoft.us/images/preview.jpg"
   var url = `${api}?template=${template}&text[]=${line_1}&text[]=${line_2}`
 
   $("#preview").attr("src", url)
@@ -64,25 +64,25 @@ function updatePreview() {
 $(document).ready(updatePreview)
 ```
 
-For example, <https://api.memegen.link/images/preview.jpg?template=iw&lines[]=live+preview&lines[]=while+typing> produces:
+For example, <https://meme.bigosoft.us/images/preview.jpg?template=iw&lines[]=live+preview&lines[]=while+typing> produces:
 
-![Live Preview](https://api.memegen.link/images/preview.jpg?template=iw&lines[]=live+preview&lines[]=while+typing)
+![Live Preview](https://meme.bigosoft.us/images/preview.jpg?template=iw&lines[]=live+preview&lines[]=while+typing)
 
 The `template=<str>` query parameter can be a template ID or URL:
 
 | Mode              | Example                                                                                                                                                                                                                                                          |
 | :---------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Template ID       | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=fry](https://api.memegen.link/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=fry)                                                                             |
-| Template URL      | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=https://api.memegen.link/images/fry.png](https://api.memegen.link/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=https://api.memegen.link/images/fry.png)     |
-| Custom Background | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=http://www.gstatic.com/webp/gallery/1.png](https://api.memegen.link/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=http://www.gstatic.com/webp/gallery/1.png) |
+| Template ID       | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=fry](https://meme.bigosoft.us/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=fry)                                                                             |
+| Template URL      | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=https://meme.bigosoft.us/images/fry.png](https://meme.bigosoft.us/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=https://meme.bigosoft.us/images/fry.png)     |
+| Custom Background | [/images/preview.jpg<wbr>?lines[]=first+line&lines[]=second+line<wbr>&template=http://www.gstatic.com/webp/gallery/1.png](https://meme.bigosoft.us/images/preview.jpg?lines[]=first+line&lines[]=second+line&template=http://www.gstatic.com/webp/gallery/1.png) |
 
 # Custom Watermark
 
 Authenticated requests can also add their own watermark to images using the `watermark=<str>` query parameter.
 
-For example, <https://api.memegen.link/images/puffin/custom_watermark/sample_image.png?api_key=myapikey42&watermark=example.com> produces:
+For example, <https://meme.bigosoft.us/images/puffin/custom_watermark/sample_image.png?api_key=myapikey42&watermark=example.com> produces:
 
-![](https://api.memegen.link/images/puffin/custom_watermark/sample_image.png?api_key=myapikey42&watermark=example.com&width=800)
+![](https://meme.bigosoft.us/images/puffin/custom_watermark/sample_image.png?api_key=myapikey42&watermark=example.com&width=800)
 
 # Zapier Integration
 
