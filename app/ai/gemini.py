@@ -2,6 +2,7 @@ import json
 import asyncio
 from pathlib import Path
 from typing import Any
+import random
 
 import google.generativeai as genai
 from sanic.log import logger
@@ -105,16 +106,19 @@ def _build_prompt(query: str) -> str:
     except Exception:
         fonts = []
 
+    # Note: double braces {{ }} below escape literal JSON braces in an f-string
     prompt = f"""
 You are an expert meme generator with access to these real templates: {', '.join(templates)}.
 Available fonts: {', '.join(fonts)}.
 File types: {', '.join(extensions)}.
 
 Instructions:
-- If the user query directly names a template, font, or filetype/extension, you must use that if available.
-- Otherwise, pick the most contextually appropriate values.
+- If the user query directly names a template, font, style, or filetype/extension, you must use that if available.
+- Some templates have multiple styles (style=<str>). Choose a valid style if context implies a variant (e.g., "animated"), otherwise omit or use "default".
+- If the user provides only part of a meme (a single line or fragment), complete it into a sensible full meme using your knowledge and choose a fitting template.
 - Always use ONLY the above template names/fonts/extensions, never invent new ones.
-- If you cannot use the user's request exactly, select the closest valid option and always return a meme generation result.
+- If you cannot use the user's request exactly, select the closest valid option and ALWAYS return a meme generation result.
+- Prefer animated output when the user mentions gif/animation/animated; otherwise prefer static.
 
 Return only valid JSON with this structure:
 {{
@@ -173,13 +177,40 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
             template_id = allowed_templates[0]
         used_fallback = True
 
+    # Helper to choose a valid extension when not specified, varying across requests
+    def _choose_extension(prefer_animated: bool = False) -> str:
+        static_exts = sorted(list(settings.ALLOWED_EXTENSIONS - settings.ANIMATED_EXTENSIONS))
+        animated_exts = sorted(list(settings.ANIMATED_EXTENSIONS & settings.ALLOWED_EXTENSIONS))
+        population = animated_exts if prefer_animated and animated_exts else static_exts or list(settings.ALLOWED_EXTENSIONS)
+        # Avoid repeating the last used extension within this process
+        global _LAST_EXTENSION
+        try:
+            last = _LAST_EXTENSION
+        except NameError:
+            last = None
+        choices = [e for e in population if e != last] or population
+        chosen = random.choice(choices)
+        _LAST_EXTENSION = chosen
+        return chosen
+
     # Build a memegen URL using existing model utilities
     if image_url:
         # Treat as custom background
         template = models.Template.objects.get_or_create(image_url)
+        if not extension:
+            extension = _choose_extension(style == "animated")
         url = template.build_custom_url(request, text, background=image_url, style=style, font=font, extension=extension)
     elif template_id:
         template = models.Template.objects.get_or_create(template_id)
+        # Validate requested style; if invalid, fall back to default
+        try:
+            styles = template.styles
+        except Exception:
+            styles = []
+        if style and style not in {"default", "animated"} and style not in styles:
+            style = "default"
+        if not extension:
+            extension = _choose_extension(style == "animated")
         url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
         if not template.valid:
             # Try fallback template, if not already tried
@@ -189,11 +220,15 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
             if fallback:
                 template_id = fallback[0]
                 template = models.Template.objects.get_or_create(template_id)
+                if not extension:
+                    extension = _choose_extension(style == "animated")
                 url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
                 used_fallback = True
             elif valid_templates:
                 template_id = valid_templates[0]
                 template = models.Template.objects.get_or_create(template_id)
+                if not extension:
+                    extension = _choose_extension(style == "animated")
                 url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
                 used_fallback = True
             else:
