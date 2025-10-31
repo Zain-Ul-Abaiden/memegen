@@ -261,6 +261,20 @@ class Template:
 
     @property
     def _extension(self) -> str:
+        # Prefer extension based on the actual background image when available
+        try:
+            src = self.get_image(animated=self.animated_image)
+            suffix = src.suffix.lower()
+        except Exception:
+            suffix = ""
+
+        if suffix == ".gif":
+            return settings.DEFAULT_ANIMATED_EXTENSION
+        if suffix in {".jpg", ".jpeg"}:
+            return "jpg"
+        if suffix == ".png":
+            return "png"
+        # Fallback to configured defaults
         return (
             settings.DEFAULT_ANIMATED_EXTENSION
             if self.animated_image
