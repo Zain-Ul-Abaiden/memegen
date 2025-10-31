@@ -140,7 +140,12 @@ async def create_automatic(request: Request):
     # Choose a template randomly, avoiding repeating the last one
     global _LAST_TEMPLATE_ID
     ids = [t["id"] for t in templates if t.get("id")]
-    pool = [i for i in ids if i != _LAST_TEMPLATE_ID] or ids
+    pool = [i for i in ids if i != _LAST_TEMPLATE_ID]
+    if not pool:
+        # If all candidates equal last used, expand to all valid excluding last if possible
+        all_templates = await asyncio.to_thread(helpers.get_valid_templates, request, "", None)
+        all_ids = [t["id"] for t in all_templates if t.get("id")]
+        pool = [i for i in all_ids if i != _LAST_TEMPLATE_ID] or all_ids
     fallback_template_id = random.choice(pool)
     _LAST_TEMPLATE_ID = fallback_template_id
 

@@ -11,6 +11,10 @@ from .. import settings, utils, models
 
 
 TEMPLATES_DIR = Path(settings.ROOT) / "templates"
+try:
+    _LAST_TEMPLATE_ID  # type: ignore[name-defined]
+except NameError:
+    _LAST_TEMPLATE_ID = None  # type: ignore[assignment]
 
 
 async def _call_gemini(prompt: str) -> dict | None:
@@ -209,6 +213,13 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
             styles = []
         if style and style not in {"default", "animated"} and style not in styles:
             style = "default"
+        # Avoid reusing the same template consecutively
+        global _LAST_TEMPLATE_ID
+        if _LAST_TEMPLATE_ID and template_id == _LAST_TEMPLATE_ID and allowed_templates:
+            alts = [t for t in allowed_templates if t != template_id]
+            if alts:
+                template_id = random.choice(alts)
+                template = models.Template.objects.get_or_create(template_id)
         if not extension:
             extension = _choose_extension(style == "animated")
         url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
@@ -238,6 +249,7 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
         return None
 
     url, _updated = await utils.meta.tokenize(request, url)
+    _LAST_TEMPLATE_ID = template_id or _LAST_TEMPLATE_ID
     if used_fallback:
         logger.warning(f"Gemini requested invalid template '{original_template}', using fallback '{template_id}' instead.")
     return {"url": url, "generator": "gemini", "confidence": float(data.get("confidence", 0.75))}
