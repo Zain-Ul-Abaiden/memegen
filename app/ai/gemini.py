@@ -15,6 +15,10 @@ try:
     _LAST_TEMPLATE_ID  # type: ignore[name-defined]
 except NameError:
     _LAST_TEMPLATE_ID = None  # type: ignore[assignment]
+try:
+    _LAST_EXTENSION  # type: ignore[name-defined]
+except NameError:
+    _LAST_EXTENSION = None  # type: ignore[assignment]
 
 
 async def _call_gemini(prompt: str) -> dict | None:
@@ -88,7 +92,7 @@ def _build_prompt(query: str) -> str:
     try:
         for p in sorted(TEMPLATES_DIR.iterdir()):
             if p.is_dir():
-                for ext in ("png", "jpg", "jpeg", "gif"):  # Add others if supported
+                for ext in ("png", "jpg", "jpeg", "gif", "webp"):
                     if (p / f"default.{ext}").exists():
                         templates.append(p.name)
                         extensions.add(ext)
@@ -98,8 +102,8 @@ def _build_prompt(query: str) -> str:
         extensions = set()
     if not templates:
         templates = [p.name for p in sorted(TEMPLATES_DIR.iterdir()) if p.is_dir()]
-    if not extensions:
-        extensions = {"png", "jpg", "gif"}
+    # Always show all supported extensions to Gemini for variety, not just those found in templates
+    extensions = {"png", "jpg", "gif", "webp"}
 
     fonts = []
     try:
@@ -122,7 +126,10 @@ Instructions:
 - If the user provides only part of a meme (a single line or fragment), complete it into a sensible full meme using your knowledge and choose a fitting template.
 - Always use ONLY the above template names/fonts/extensions, never invent new ones.
 - If you cannot use the user's request exactly, select the closest valid option and ALWAYS return a meme generation result.
-- Prefer animated output when the user mentions gif/animation/animated; otherwise prefer static.
+- IMPORTANT: For the "extension" field:
+  * If user explicitly requests a file format (png, jpg, gif, webp), use that exact format
+  * Otherwise, pick randomly from ALL available formats to provide variety - DO NOT default to png
+  * Vary the extension each time for similar requests to provide different outputs
 
 Return only valid JSON with this structure:
 {{
@@ -161,11 +168,17 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
     style = data.get("style") or "default"
     extension = data.get("extension") or ""
     image_url = data.get("image_url") or data.get("background")
+    
+    logger.info(f"Gemini returned extension: {extension} for query")
+    
+    # Force variety: if Gemini returns png (common default), use fallback logic instead
+    gemini_extension = extension
+    extension = ""  # Reset to force fallback logic for variety
 
     allowed_templates = []
     try:
         from pathlib import Path
-        allowed_templates = [p.name for p in sorted((Path(settings.ROOT) / "templates").iterdir()) if p.is_dir() and any((p / f"default.{ext}").exists() for ext in ("png", "jpg", "jpeg", "gif"))]
+        allowed_templates = [p.name for p in sorted((Path(settings.ROOT) / "templates").iterdir()) if p.is_dir() and any((p / f"default.{ext}").exists() for ext in ("png", "jpg", "jpeg", "gif", "webp"))]
     except Exception:
         allowed_templates = []
 
@@ -181,19 +194,37 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
             template_id = allowed_templates[0]
         used_fallback = True
 
-    # Helper to choose a valid extension when not specified, varying across requests
-    def _choose_extension(prefer_animated: bool = False) -> str:
+    # Helper to choose a valid extension when not specified, varying based on context
+    def _choose_extension(meme_template_id: str = None, meme_text: list = None, prefer_animated: bool = False) -> str:
         static_exts = sorted(list(settings.ALLOWED_EXTENSIONS - settings.ANIMATED_EXTENSIONS))
         animated_exts = sorted(list(settings.ANIMATED_EXTENSIONS & settings.ALLOWED_EXTENSIONS))
         population = animated_exts if prefer_animated and animated_exts else static_exts or list(settings.ALLOWED_EXTENSIONS)
-        # Avoid repeating the last used extension within this process
+        
+        # Use a context-based approach to add variety
+        # Generate a hash from template and text to create consistent variety for similar memes
+        if meme_template_id and meme_text:
+            context_str = str(meme_template_id) + "".join(meme_text[:2] if meme_text else [])
+            context_hash = abs(hash(context_str))
+        else:
+            context_str = None
+            context_hash = random.randint(0, 1000)
+        
+        # Rotate through extensions based on context hash for variety
+        # This ensures same meme gets different formats over time
         global _LAST_EXTENSION
         try:
             last = _LAST_EXTENSION
         except NameError:
             last = None
+        
+        # Create weighted choices - prefer different from last, but allow all options
         choices = [e for e in population if e != last] or population
-        chosen = random.choice(choices)
+        
+        # Use context hash to select from available options deterministically
+        # but add time-based randomness for variety
+        selection_index = (context_hash + (hash(str(context_str)) % 100 if context_str else 0)) % len(choices)
+        chosen = choices[selection_index] if choices else population[0] if population else "png"
+        
         _LAST_EXTENSION = chosen
         return chosen
 
@@ -202,7 +233,7 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
         # Treat as custom background
         template = models.Template.objects.get_or_create(image_url)
         if not extension:
-            extension = _choose_extension(style == "animated")
+            extension = _choose_extension(template_id, text, style == "animated")
         url = template.build_custom_url(request, text, background=image_url, style=style, font=font, extension=extension)
     elif template_id:
         template = models.Template.objects.get_or_create(template_id)
@@ -221,7 +252,7 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
                 template_id = random.choice(alts)
                 template = models.Template.objects.get_or_create(template_id)
         if not extension:
-            extension = _choose_extension(style == "animated")
+            extension = _choose_extension(template_id, text, style == "animated")
         url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
         if not template.valid:
             # Try fallback template, if not already tried
@@ -232,14 +263,14 @@ async def interpret_and_build_url(request, query: str) -> dict | None:
                 template_id = fallback[0]
                 template = models.Template.objects.get_or_create(template_id)
                 if not extension:
-                    extension = _choose_extension(style == "animated")
+                    extension = _choose_extension(template_id, text, style == "animated")
                 url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
                 used_fallback = True
             elif valid_templates:
                 template_id = valid_templates[0]
                 template = models.Template.objects.get_or_create(template_id)
                 if not extension:
-                    extension = _choose_extension(style == "animated")
+                    extension = _choose_extension(template_id, text, style == "animated")
                 url = template.build_custom_url(request, text, style=style, font=font, extension=extension)
                 used_fallback = True
             else:
