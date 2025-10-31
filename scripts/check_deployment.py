@@ -6,7 +6,7 @@ import requests
 
 @pytest.fixture(scope="session")
 def url():
-    return os.getenv("SITE", "http://localhost:5000")
+    return os.getenv("SITE", "https://meme.bigosoft.us")
 
 
 def test_get_templates(expect, url):

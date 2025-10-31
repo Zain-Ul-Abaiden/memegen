@@ -31,6 +31,7 @@ def _encode(line):
         ("?", "~q"),
         ("%", "~p"),
         ("#", "~h"),
+        (":", "~c"),
         ('"', "''"),
         ("/", "~s"),
         ("\\", "~b"),
@@ -48,6 +49,11 @@ def _encode(line):
 
     if has_trailing_under:
         encoded = encoded.replace("___", "__-")
+
+    # On Windows, path segments cannot end with a dot. Replace any trailing dots.
+    # Preserve length by converting trailing '.' characters to underscores.
+    while encoded.endswith("."):
+        encoded = encoded[:-1] + "_"
 
     return encoded
 
@@ -82,6 +88,7 @@ def decode(slug: str) -> list[str]:
         ("~l", "<"),
         ("~g", ">"),
         ("~b", "\\"),
+        ("~c", ":"),
     ]:
         slug = slug.replace(before, after)
 
@@ -104,4 +111,12 @@ def fingerprint(value: str, *, prefix="_custom-", suffix="") -> str:
 
 
 def slugify(value: str) -> str:
+    # Allow either pure slugs, or _custom-hash style
+    if value.startswith("_custom-"):
+        # Ensure that what's after _custom- is a hex string
+        suffix = value[len("_custom-"):]
+        if suffix and all(c in "0123456789abcdef" for c in suffix.lower()):
+            return value
+        # fallback: strip anything else
+        return re.sub(r"[^_a-z0-9-]", "", value).strip("-")
     return re.sub(r"[^a-z0-9-]", "", value).strip("-")

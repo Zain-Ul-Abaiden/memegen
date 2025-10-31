@@ -10,7 +10,7 @@ from ..types import Dimensions, Point
 
 
 def alpha(value: float) -> str:
-    return hex(int(255 * value))[2:].upper()
+    return f"{int(255 * value):02X}"
 
 
 @dataclass

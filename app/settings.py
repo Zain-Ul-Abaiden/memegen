@@ -1,7 +1,14 @@
 import os
 from pathlib import Path
 
+# Load environment variables from a .env file if present so GEMINI_URL / keys
+# can be provided via a local .env during development.
+from dotenv import load_dotenv
+
 ROOT = Path(__file__).parent.parent.resolve()
+
+# Load .env from the project root (silently ignore if missing)
+load_dotenv(ROOT / ".env")
 
 PLACEHOLDER = "string"  # Swagger UI placeholder value
 
@@ -9,10 +16,11 @@ PLACEHOLDER = "string"  # Swagger UI placeholder value
 
 DEBUG = False
 
-# Force local mode
-SERVER_NAME = "localhost:5000"
-RELEASE_STAGE = "local"
-SCHEME = "http"
+# Server name, scheme, and release stage can be overridden via environment
+# variables in deployed environments. Defaults are suitable for local dev.
+SERVER_NAME = os.environ.get("SERVER_NAME", "localhost:3000")
+RELEASE_STAGE = os.environ.get("RELEASE_STAGE", "local")
+SCHEME = os.environ.get("SCHEME", "http")
 
 BASE_URL = f"{SCHEME}://{SERVER_NAME}"
 DEPLOYED = RELEASE_STAGE != "local" and not DEBUG
@@ -45,10 +53,9 @@ MINIMUM_FRAMES = 5
 
 # Watermarks
 
-DISABLED_WATERMARK = "none"
-DEFAULT_WATERMARK = "none"
+DISABLED_WATERMARK = ''
+DEFAULT_WATERMARK = ''
 ALLOWED_WATERMARKS = []
-
 WATERMARK_HEIGHT = 0
 WATERMARK_ALPHA = 0
 
@@ -132,3 +139,18 @@ REMOTE_TRACKING_ERRORS = 0
 REMOTE_TRACKING_ERRORS_LIMIT = 0
 
 BUGSNAG_API_KEY = None
+
+# Gemini / AI integration (optional)
+# Configure GEMINI_URL and GEMINI_API_KEY in your environment to enable parsing
+# natural-language meme requests. GEMINI_MODEL can be e.g. "gemini-free".
+GEMINI_URL = os.environ.get("GEMINI_URL")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.0-flash")
+
+# API authentication
+API_KEY = os.environ.get("API_KEY")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")
+
+# API authentication
+API_KEY = os.environ.get("API_KEY")
+API_KEY_HEADER = os.environ.get("API_KEY_HEADER", "X-API-Key")

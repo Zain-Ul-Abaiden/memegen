@@ -38,7 +38,19 @@ def preview(
     style: str = "default",
     watermark: str = "",
 ) -> tuple[bytes, str]:
-    path = template.build_path(lines, "", style, settings.PREVIEW_SIZE, "", "jpg")
+    # Choose a compact but context-aware preview format
+    source = template.get_image(style)
+    if source.suffix.lower() in {".jpg", ".jpeg"}:
+        preview_ext = "jpg"
+        pil_format = "JPEG"
+        content_type = "image/jpeg"
+    else:
+        # Prefer PNG for crisp text or non-JPEG sources
+        preview_ext = "png"
+        pil_format = "PNG"
+        content_type = "image/png"
+
+    path = template.build_path(lines, "", style, settings.PREVIEW_SIZE, "", preview_ext)
     logger.info(f"Previewing meme for {path}")
     image = render_image(
         template,
@@ -50,8 +62,12 @@ def preview(
         watermark=watermark,
     )
     stream = io.BytesIO()
-    image.convert("RGB").save(stream, format="JPEG", quality=50)
-    return stream.getvalue(), "image/jpeg"
+    # Use RGB for JPEG, RGBA acceptable for PNG (Pillow will handle conversion)
+    if pil_format == "JPEG":
+        image.convert("RGB").save(stream, format=pil_format, quality=50)
+    else:
+        image.save(stream, format=pil_format, optimize=True)
+    return stream.getvalue(), content_type
 
 
 def save(

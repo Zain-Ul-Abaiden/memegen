@@ -14,8 +14,8 @@ def describe_list():
             expect(response.status) == 200
             expect(response.json).contains(
                 {
-                    "url": "http://localhost:5000/images/iw/does_testing/in_production.png",
-                    "template": "http://localhost:5000/templates/iw",
+                    "url": "https://meme.bigosoft.us/images/iw/does_testing/in_production.png",
+                    "template": "https://meme.bigosoft.us/templates/iw",
                 }
             )
 
@@ -33,7 +33,7 @@ def describe_list():
             request, response = client.post("/images", **kwargs)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.png"
+                "url": "https://meme.bigosoft.us/images/iw/foo/bar.png"
             }
 
         def it_lowercases_text_for_default_templates(expect, client):
@@ -44,7 +44,7 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.png"
+                "url": "https://meme.bigosoft.us/images/iw/foo/bar.png"
             }
 
         def it_preserves_text_case_for_top_layouts(expect, client):
@@ -56,7 +56,7 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/Bar.png?layout=top"
+                "url": "https://meme.bigosoft.us/images/iw/foo/Bar.png?layout=top"
             }
 
         def it_removes_redundant_styles(expect, client):
@@ -69,7 +69,7 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.png?style=default,test&font=impact"
+                "url": "https://meme.bigosoft.us/images/iw/foo/bar.png?style=default,test&font=impact"
             }
 
         def it_can_force_animated_extension(expect, client):
@@ -81,7 +81,7 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.gif"
+                "url": "https://meme.bigosoft.us/images/iw/foo/bar.gif"
             }
 
         def it_prefers_extension_over_animated_style(expect, client):
@@ -94,13 +94,13 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/iw/foo/bar.webp"
+                "url": "https://meme.bigosoft.us/images/iw/foo/bar.webp"
             }
 
         def it_redirects_if_requested(expect, client):
             data = {"template_id": "iw", "text_lines": ["abc"], "redirect": True}
             request, response = client.post("/images", data=data, allow_redirects=False)
-            redirect = "http://localhost:5000/images/iw/abc.png?status=201"
+            redirect = "https://meme.bigosoft.us/images/iw/abc.png?status=201"
             expect(response.status) == 302
             expect(response.headers["Location"]) == redirect
 
@@ -115,7 +115,7 @@ def describe_list():
             request, response = client.post("/images", data=data)
             expect(response.status) == 404
             expect(response.json) == {
-                "url": "http://localhost:5000/images/unknown/one/two.png"
+                "url": "https://meme.bigosoft.us/images/unknown/one/two.png"
             }
 
         def it_handles_unknown_template_id_redirect(expect, client, unknown_template):
@@ -125,7 +125,7 @@ def describe_list():
                 "redirect": True,
             }
             request, response = client.post("/images", data=data, allow_redirects=False)
-            redirect = "http://localhost:5000/images/unknown/one/two.png?status=201"
+            redirect = "https://meme.bigosoft.us/images/unknown/one/two.png?status=201"
             expect(response.status) == 302
             expect(response.headers["Location"]) == redirect
 
@@ -133,19 +133,19 @@ def describe_list():
             data = {"template_id": "iw"}
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
-            expect(response.json) == {"url": "http://localhost:5000/images/iw.png"}
+            expect(response.json) == {"url": "https://meme.bigosoft.us/images/iw.png"}
 
         def it_drops_trailing_blank_lines(expect, client):
             data = {"template_id": "iw", "text_lines": ["", "", "", ""]}
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
-            expect(response.json) == {"url": "http://localhost:5000/images/iw.png"}
+            expect(response.json) == {"url": "https://meme.bigosoft.us/images/iw.png"}
 
         def it_supports_slashes_to_indicate_blank_lines(expect, client):
             data = {"template_id": "iw", "text_lines": ["/", "2", "/", ""]}
             request, response = client.post("/images", data=data)
             expect(response.status) == 201
-            expect(response.json) == {"url": "http://localhost:5000/images/iw/_/2.png"}
+            expect(response.json) == {"url": "https://meme.bigosoft.us/images/iw/_/2.png"}
 
         def it_handles_invalid_json(expect, client):
             request, response = client.post("/images", content="???")
@@ -427,7 +427,7 @@ def describe_automatic():
             kwargs: dict = {"content": json.dumps(data)} if as_json else {"data": data}
             request, response = client.post("/images/automatic", **kwargs)
             expect(response.json) == {
-                "url": "http://localhost:5000/images/example.png"
+                "url": "https://meme.bigosoft.us/images/example.png"
                 + "?background=https://www.gstatic.com/webp/gallery/3.png",
                 "generator": "Test",
                 "confidence": 0.5,
@@ -451,7 +451,7 @@ def describe_custom():
             request, response = client.post("/images/custom", **kwargs)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/custom/foo/bar.png"
+                "url": "https://meme.bigosoft.us/images/custom/foo/bar.png"
                 "?background=http://example.com"
             }
 
@@ -463,7 +463,7 @@ def describe_custom():
             request, response = client.post("/images/custom", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/custom/foo/bar.png"
+                "url": "https://meme.bigosoft.us/images/custom/foo/bar.png"
                 "?background=https://cdn.discordapp.com/attachments/1/2/stare.png%3Fex%3Da1%26is%3Db2%26hm%3Dc3"
             }
 
@@ -475,7 +475,7 @@ def describe_custom():
             request, response = client.post("/images/custom", data=data)
             expect(response.status) == 201
             expect(response.json) == {
-                "url": "http://localhost:5000/images/custom/foo/bar.gif"
+                "url": "https://meme.bigosoft.us/images/custom/foo/bar.gif"
                 "?background=https://media.giphy.com/media/ICOgUNjpvO0PC/giphy.gif"
             }
 
@@ -488,7 +488,7 @@ def describe_custom():
             request, response = client.post(
                 "/images/custom", data=data, allow_redirects=False
             )
-            redirect = "http://localhost:5000/images/custom/abc.png?background=https://www.gstatic.com/webp/gallery/4.png&status=201"
+            redirect = "https://meme.bigosoft.us/images/custom/abc.png?background=https://www.gstatic.com/webp/gallery/4.png&status=201"
             expect(response.status) == 302
             expect(response.headers["Location"]) == redirect
 
@@ -502,7 +502,7 @@ def describe_custom():
         def it_normalizes_the_url(expect, client):
             request, response = client.get("/images/custom")
             expect(response.json) == [
-                {"url": "http://localhost:5000/images/example.png"}
+                {"url": "https://meme.bigosoft.us/images/example.png"}
             ]
 
         @patch(
@@ -520,7 +520,7 @@ def describe_custom():
             request, response = client.get("/images/custom")
             expect(response.json) == [
                 {
-                    "url": "http://localhost:5000/images/example.png"
+                    "url": "https://meme.bigosoft.us/images/example.png"
                     + "?background=https://www.gstatic.com/webp/gallery/3.png"
                 }
             ]

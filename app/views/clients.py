@@ -2,23 +2,20 @@ from sanic import Blueprint, response
 from sanic.request import Request
 from sanic_ext import openapi
 
-from .. import utils
+from .. import utils, settings
 from .helpers import preview_image
 from .schemas import AuthResponse, ErrorResponse
 
 blueprint = Blueprint("Clients", url_prefix="/")
 
+security = {settings.API_KEY_HEADER: []} if settings.API_KEY_HEADER else None
 
 @blueprint.post("/auth")
-@openapi.summary("Validate your API key")
-@openapi.response(200, {"application/json": AuthResponse}, "Your API key is valid")
-@openapi.response(401, {"application/json": ErrorResponse}, "Your API key is invalid")
-async def validate(request: Request):
-    info = await utils.meta.authenticate(request)
-    return response.json(
-        info or {"error": "API key missing or invalid."},
-        status=200 if info else 401,
-    )
+@openapi.secured(security)
+@openapi.summary("Validate your API key (no-op for self-hosted)")
+@openapi.response(200, {"application/json": AuthResponse}, "Auth is always permitted (self-hosted)")
+async def auth(request):
+    return response.json({"success": True}, status=200)
 
 
 @blueprint.get("/images/preview.jpg")
@@ -40,4 +37,6 @@ async def preview(request: Request):
     style = request.args.get("style") or ",".join(request.args.getlist("styles[]", []))
     while style.endswith(",default"):
         style = style.removesuffix(",default")
+    return await preview_image(request, id, style, lines)
+
     return await preview_image(request, id, style, lines)

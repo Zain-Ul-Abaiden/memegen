@@ -34,20 +34,20 @@ $ make run
 
 ## Preview image rendering
 
-View all example images: http://localhost:5000/examples
+View all example images: https://meme.bigosoft.us/examples
 
-View test images with automatic reload: http://localhost:5000/test
+View test images with automatic reload: https://meme.bigosoft.us/test
 
 To view a specific image with automatic reload, simply drop the file extension.
 
 ## Add a new meme template
 
-1. Visit http://localhost:5000/<my_new_template_id>
+1. Visit https://meme.bigosoft.us/<my_new_template_id>
 2. Add a `default.png` (or JPG) background image in `templates/<my_new_template_id>` directory
 3. Update `config.yml` in the `templates/<my_new_template_id>` directory
-4. Refresh http://localhost:5000/images/<my_new_template_id> to see the example
+4. Refresh https://meme.bigosoft.us/images/<my_new_template_id> to see the example
 5. Adjust `config.yml` as necessary to position and style the text
-6. Visit http://localhost:5000/templates to validate all templates
+6. Visit https://meme.bigosoft.us/templates to validate all templates
 
 # Continuous Integration
 
@@ -95,10 +95,10 @@ You can then run the container by running:
 
 ```bash
 # Run the container
-docker run --publish 5000:5000 --env DOMAIN="set.your.domain" memegen
+docker run --publish 3000:3000 --env DOMAIN="set.your.domain" memegen
 
 # Validate functionality
-$ curl http://127.0.0.1:5000/docs/ -sI
+$ curl http://127.0.0.1:3000/docs/ -sI
 HTTP/1.1 200 OK
 date: Sun, 24 Oct 2021 19:16:07 GMT
 server: uvicorn
